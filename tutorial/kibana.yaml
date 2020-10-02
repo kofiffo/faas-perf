@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+  labels:
+    app: kiba
+spec:
+  ports:
+  - port: 5601
+    targetPort: 5601
+  selector:
+    app: kiba
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+spec:
+  selector:
+    matchLabels:
+      app: kiba
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kiba
+    spec:
+      containers:
+      - name: kibana-6-8-0
+        image: docker.elastic.co/kibana/kibana:6.8.0
+        ports:
+        - containerPort: 5601

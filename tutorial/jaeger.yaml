@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  labels:
+    app: jaeg
+spec:
+  ports:
+  - name: port-16686
+    port: 16686
+    targetPort: 16686
+  selector:
+    app: jaeg
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-udp
+  labels:
+    app: jaeg
+spec:
+  ports:
+  - protocol: UDP
+    port: 6831
+  selector:
+    app: jaeg
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+spec:
+  selector:
+    matchLabels:
+      app: jaeg
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: jaeg
+    spec:
+      containers:
+      - name: jaeger-all-in-one
+        image: jaegertracing/all-in-one:1.12
+        env:
+        - name: SPAN_STORAGE_TYPE
+          value: "elasticsearch"
+        - name: ES_SERVER_URLS
+          value: "http://elasticsearch:9200"
+        - name: ES_TAGS_AS_FIELDS_ALL
+          value: "true"
+        ports:
+        - containerPort: 16686

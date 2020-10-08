@@ -26,8 +26,15 @@ spec:
       labels:
         app: kiba
     spec:
+      volumes:
+      - name: kibana-volume
+        persistentVolumeClaim:
+          claimName: pvc-nfs-worker
       containers:
       - name: kibana-6-8-0
         image: docker.elastic.co/kibana/kibana:6.8.0
+        volumeMounts:
+        - name: kibana-volume
+          mountPath: /mnt
         ports:
         - containerPort: 5601

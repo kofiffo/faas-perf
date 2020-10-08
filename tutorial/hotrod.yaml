@@ -36,6 +36,10 @@ spec:
       labels:
         app: hot
     spec:
+      volumes:
+      - name: hotrod-volume
+        persistentVolumeClaim:
+          claimName: pvc-nfs-worker
       containers:
       - name: hotrod
         image: jaegertracing/example-hotrod:latest
@@ -44,6 +48,9 @@ spec:
           value: "10.42.0.1"
         - name: JAEGER_AGENT_PORT
           value: "6831"
+        volumeMounts:
+        - name: hotrod-volume
+          mountPath: /mnt
         ports:
         - containerPort: 8080
           name: port-8080

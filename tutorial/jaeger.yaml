@@ -40,6 +40,10 @@ spec:
       labels:
         app: jaeg
     spec:
+      volumes:
+      - name: jaeger-volume
+        persistentVolumeClaim:
+          claimName: pvc-nfs-worker
       containers:
       - name: jaeger-all-in-one
         image: jaegertracing/all-in-one:1.12
@@ -50,5 +54,8 @@ spec:
           value: "http://elasticsearch:9200"
         - name: ES_TAGS_AS_FIELDS_ALL
           value: "true"
+        volumeMounts:
+        - name: jaeger-volume
+          mountPath: /mnt
         ports:
         - containerPort: 16686

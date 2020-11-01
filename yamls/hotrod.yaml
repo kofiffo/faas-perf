@@ -45,7 +45,7 @@ spec:
         image: jaegertracing/example-hotrod:latest
         env:
         - name: JAEGER_AGENT_HOST
-          value: "10.42.0.1"
+          value: "10.103.158.251"
         - name: JAEGER_AGENT_PORT
           value: "6831"
         volumeMounts:

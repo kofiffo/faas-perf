@@ -11,5 +11,5 @@ spec:
   accessModes:
     - ReadWriteMany
   nfs:
-    server: 128.110.154.3
-    path: /users/labor/onlab2/tutorial/nfs
+    server: 128.110.154.167
+    path: /users/labor/kofiffo/onlab2/nfs

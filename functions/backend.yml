@@ -1,0 +1,10 @@
+version: 1.0
+provider:
+  name: openfaas
+  gateway: http://128.110.154.167:31112
+functions:
+  backend:
+    lang: python
+    handler: ./backend
+    image: kofiffo/backend:latest
+

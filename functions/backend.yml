@@ -7,4 +7,5 @@ functions:
     lang: python
     handler: ./backend
     image: kofiffo/backend:latest
-
+    environment:
+        write_debug: true

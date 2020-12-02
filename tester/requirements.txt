@@ -1,1 +1,5 @@
 redis
+jaeger-client
+requests
+flask
+futures

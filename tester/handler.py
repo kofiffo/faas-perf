@@ -1,4 +1,6 @@
-import redis
+import requests
+import sys
+import os
 import time
 import opentracing
 import logging
@@ -15,7 +17,7 @@ def init_tracer(service):
                 'param': 1,
             },
             'local_agent': {
-                'reporting_host': '10.107.197.168',
+                'reporting_host': '10.100.179.158',
                 'reporting_port': '6831',
             },
             'logging': True,
@@ -29,26 +31,17 @@ def init_tracer(service):
 tracer = init_tracer('frontend')
 
 def handle(req):
+    with tracer.start_span('frontend') as span:
+        span.log_kv({'event': 'call_backend'})
 
-    with tracer.start_span('send_request') as span:
-    #trigger the backend function through the redis channel
-        r = redis.Redis(host='10.99.192.111', port=6379, db=0)
-        r.publish('request_channel', req)
+        gateway_hostname = os.getenv("gateway_hostname", "gateway.openfaas")
 
-    #subscribe to the same channel and wait for the response
-    p = r.pubsub(ignore_subscribe_messages=True)
-    p.subscribe('response_channel')
+        body = req
 
-    #wait for response
-    while(True):
-        response = p.get_message()
-        if response:
-            break
+        #trigger the backend function
+        r = requests.get("http://" + gateway_hostname + ":8080/function/backend", data = body)
 
-        time.sleep(0.001)
+        if r.status_code != 200:
+            sys.exit("Error with backend, expected: %d, got: %d\n" % (200, r.status_code))
 
-    # yield to IOLoop to flush the spans
-    time.sleep(2)
-    tracer.close()
-
-    return response['data']
+        return r.content

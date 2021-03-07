@@ -1,4 +1,4 @@
-redis
+requests
 jaeger-client
 requests
 flask

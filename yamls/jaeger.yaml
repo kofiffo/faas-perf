@@ -40,18 +40,18 @@ spec:
       labels:
         app: jaeg
     spec:
-      volumes:
-      - name: jaeger-volume
-        persistentVolumeClaim:
-          claimName: pvc-nfs-worker
+      # volumes:
+      # - name: jaeger-volume
+      #   persistentVolumeClaim:
+      #     claimName: pvc-nfs-worker
       containers:
       - name: jaeger-all-in-one
         image: jaegertracing/all-in-one:1.12
         env:
         - name: SPAN_STORAGE_TYPE
           value: "memory"
-        volumeMounts:
-        - name: jaeger-volume
-          mountPath: /mnt
+        # volumeMounts:
+        # - name: jaeger-volume
+        #   mountPath: /mnt
         ports:
         - containerPort: 16686

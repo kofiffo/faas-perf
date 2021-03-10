@@ -1,0 +1,3 @@
+opentracing
+requests
+jaeger-client

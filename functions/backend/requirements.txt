@@ -1,5 +1,3 @@
-requests
+opentracing
 jaeger-client
-requests
 flask
-futures

@@ -1,0 +1,11 @@
+version: 1.0
+provider:
+  name: openfaas
+  gateway: http://127.0.0.1:8080
+functions:
+  backend-notrace:
+    lang: python3-flask
+    handler: ./backend_notrace
+    image: kofiffo/backend-notrace:latest
+    environment:
+        write_debug: true

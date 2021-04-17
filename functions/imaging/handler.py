@@ -1,19 +1,25 @@
-from PIL import Image
+from minio import Minio
 import requests
 import os
 
 
 def handle(req):
-    try:
-        img = Image.open(requests.get(req, stream=True).raw)
 
-        gateway_hostname = os.getenv("gateway_hostname", "gateway.openfaas")
-        url = "http://" + gateway_hostname + ":8080/function/resize"
+    client = Minio(os.environ['minio_hostname'],
+                   access_key=os.environ['minio_access_key'],
+                   secret_key=os.environ['minio_secret_key'],
+                   secure=False)
 
-        r = requests.post(url, data=img.tobytes())
-        resp = r.text
+    r = requests.get(req)
 
-    except Exception as e:
-        resp = str(e)
+    with open("/tmp/image.png", "wb") as file:
+        file.write(r.content)
 
-    return resp
+    client.fput_object("incoming", "image.png", "/tmp/image.png")
+
+    gateway_hostname = os.getenv("gateway_hostname", "gateway.openfaas")
+    url = "http://" + gateway_hostname + ":8080/function/resize"
+
+    r = requests.post(url)
+
+    return req

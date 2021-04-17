@@ -7,4 +7,8 @@ functions:
     lang: python3-flask
     handler: ./imaging
     image: kofiffo/imaging:latest
-
+    environment:
+      minio_hostname: "192.168.0.227:9000"
+      minio_access_key: "minioadmin"
+      minio_secret_key: "minioadmin"
+      write_debug: true

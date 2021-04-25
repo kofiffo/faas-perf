@@ -1,0 +1,10 @@
+version: 1.0
+provider:
+  name: openfaas
+  gateway: http://127.0.0.1:8080
+functions:
+  resize-url:
+    lang: python3-flask
+    handler: ./resize-url
+    image: kofiffo/resize-url:latest
+

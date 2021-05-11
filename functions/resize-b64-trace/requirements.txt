@@ -1,0 +1,4 @@
+pillow
+opentracing
+jaeger-client
+flask

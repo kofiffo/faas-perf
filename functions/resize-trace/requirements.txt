@@ -1,0 +1,5 @@
+pillow
+minio
+jaeger-client
+opentracing
+flask

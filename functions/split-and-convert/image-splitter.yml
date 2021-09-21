@@ -1,0 +1,15 @@
+version: 1.0
+provider:
+  name: openfaas
+  gateway: http://127.0.0.1:8080
+functions:
+  image-splitter:
+    lang: python3-flask-debian
+    handler: ./image-splitter
+    image: kofiffo/image-splitter:latest
+    environment:
+      minio_hostname: "192.168.122.1:9000"
+      minio_access_key: "minioadmin"
+      minio_secret_key: "minioadmin"
+      write_debug: true
+

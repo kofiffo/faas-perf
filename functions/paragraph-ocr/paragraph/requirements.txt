@@ -1,0 +1,5 @@
+minio
+pillow
+opencv-python
+requests
+numpy

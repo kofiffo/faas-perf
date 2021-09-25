@@ -1,4 +1,5 @@
 from minio import Minio
+from minio.notificationconfig import (NotificationConfig, SuffixFilterRule, QueueConfig)
 from PIL import Image
 import cv2 as cv
 import numpy as np
@@ -14,6 +15,19 @@ def handle(req):
                    access_key=os.environ['minio_access_key'],
                    secret_key=os.environ['minio_secret_key'],
                    secure=False)
+
+    # config = NotificationConfig(
+    #     queue_config_list=[
+    #         QueueConfig(
+    #             "arn:minio:sqs::1:webhook",
+    #             ["s3:ObjectCreated:*"],
+    #             config_id="1",
+    #             suffix_filter_rule=SuffixFilterRule(".txt"),
+    #         ),
+    #     ],
+    # )
+    #
+    # client.set_bucket_notification("bucket-3", config)
 
     imgdata = base64.b64decode(req)
     image = np.array(Image.open(io.BytesIO(imgdata)))

@@ -19,9 +19,11 @@ def handle(req):
     with open(f"/tmp/{filename}.txt", 'w') as f:
         f.write(text)
 
-    if not client.bucket_exists("processed"):
-        client.make_bucket("processed")
+    bucketname = f"bucket-{req}"
 
-    client.fput_object("processed", f"{filename}.txt", f"/tmp/{filename}.txt")
+    if not client.bucket_exists(bucketname):
+        client.make_bucket(bucketname)
+
+    client.fput_object(bucketname, f"{filename}.txt", f"/tmp/{filename}.txt")
 
     return req

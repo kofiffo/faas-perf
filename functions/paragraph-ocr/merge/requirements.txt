@@ -1,1 +1,3 @@
 minio
+jaeger-client
+opentracing

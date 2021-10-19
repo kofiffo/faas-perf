@@ -68,6 +68,8 @@ def handle(req):
 
         for obj in client.list_objects("paragraphs"):
             client.remove_object("paragraphs", obj.object_name)
-        client.remove_bucket("paragraphs")
+
+        for obj in client.list_objects("context"):
+            client.remove_object("context", obj.object_name)
 
         return req

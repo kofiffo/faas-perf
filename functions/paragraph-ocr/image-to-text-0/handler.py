@@ -9,6 +9,8 @@ import pytesseract
 import os
 import requests
 
+os.environ["OMP_THREAD_LIMIT"] = '1'
+
 
 def init_tracer(service):
     logging.getLogger('').handlers = []
@@ -49,10 +51,6 @@ def handle(req):
                        secret_key=os.environ['minio_secret_key'],
                        secure=False)
 
-        # object_list = list(client.list_objects("incoming"))
-        # last_object_name = object_list[-1].object_name.split('.')[0]
-        # last_index = int(last_object_name[-1])
-
         scope.span.log_kv({"event": "get_object"})
 
         filename = f"paragraph_{req}"
@@ -60,7 +58,7 @@ def handle(req):
 
         scope.span.log_kv({"event": "image_to_string"})
 
-        text = pytesseract.image_to_string(Image.open(f"/tmp/{filename}.png"))
+        text = pytesseract.image_to_string(Image.open(f"/tmp/{filename}.png"), lang="eng")
 
         scope.span.log_kv({"event": "put_object"})
 

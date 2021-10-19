@@ -3,7 +3,6 @@ from PIL import Image
 from opentracing.ext import tags
 from opentracing.propagation import Format
 from jaeger_client import Config
-from concurrent.futures import ThreadPoolExecutor
 import cv2 as cv
 import numpy as np
 import os
@@ -65,54 +64,35 @@ def handle(req):
         cnts.reverse()
 
         gateway_hostname = os.getenv("gateway_hostname", "gateway.openfaas")
-        # url = f"http://{gateway_hostname}:8080/function/image-to-text-"
-        url = f"http://{gateway_hostname}:8080/function/image-to-text-0"
+        url = f"http://{gateway_hostname}:8080/async-function/image-to-text-0"
 
         span = tracer.active_span
         span.set_tag(tags.HTTP_METHOD, "GET")
         span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
-        # span.set_tag(tags.HTTP_URL, url)
+        span.set_tag(tags.HTTP_URL, url)
         headers = {}
-        # tracer.inject(span, Format.HTTP_HEADERS, headers)
+        tracer.inject(span, Format.HTTP_HEADERS, headers)
 
-        # paragraphs = []
         threads = []
         idx = 0
+
+        if not client.bucket_exists("incoming"):
+            client.make_bucket("incoming")
 
         for c in cnts:
             x, y, w, h = cv.boundingRect(c)
             cv.rectangle(image, (x, y), (x + w, y + h), (36, 255, 12), 2)
             p = gray[y:y + h, x:x + w]
             filename = f"paragraph_{idx}.png"
-            # paragraphs.append(p)
             cv.imwrite(f"/tmp/{filename}", p)
-
-            if not client.bucket_exists("incoming"):
-                client.make_bucket("incoming")
 
             client.fput_object("incoming", filename, f"/tmp/{filename}")
 
-            # full_url = f"{url}{idx}"
-            full_url = f"{url}"
-            span.set_tag(tags.HTTP_URL, full_url)
-            tracer.inject(span, Format.HTTP_HEADERS, headers)
-
-            # requests.post(full_url, data=str(idx), headers=headers)
             # requests.post(url, data=str(idx), headers=headers)
 
-            # threads.append(executor.submit(invoke_function, url, idx, headers))
-
-            t = threading.Thread(target=invoke_function(full_url, idx, headers))
-            t.daemon = True
+            t = threading.Thread(target=invoke_function(url, idx, headers))
             threads.append(t)
             idx += 1
-
-        # for i in indexes:
-        #     invoke_function(url, i, headers)
-
-        # with ThreadPoolExecutor(max_workers=4) as executor:
-        #     for i in indexes:
-        #         executor.submit(invoke_function, url, i, headers)
 
         span.set_tag(tags.HTTP_URL, f"http://{gateway_hostname}:8080/function/merge)")
         tracer.inject(span, Format.HTTP_HEADERS, headers)

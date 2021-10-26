@@ -1,0 +1,7 @@
+minio
+pillow
+opencv-python
+requests
+numpy
+jaeger-client
+opentracing

@@ -43,8 +43,10 @@ def init_tracer(service):
 tracer = init_tracer("paragraph")
 
 
-def handle(req):
+def handle(event, context):
     with tracer.start_active_span("paragraph") as scope:
+        req = event["data"]
+
         client = Minio(os.environ['minio_hostname'],
                        access_key=os.environ['minio_access_key'],
                        secret_key=os.environ['minio_secret_key'],
@@ -61,14 +63,13 @@ def handle(req):
 
         cnts = cv.findContours(dilate, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         cnts = cnts[0] if len(cnts) == 2 else cnts[1]
-        cnts.reverse()
+        cnts = cnts[::-1]
 
-        gateway_hostname = os.getenv("gateway_hostname", "gateway.openfaas")
-        url = f"http://{gateway_hostname}:8080/async-function/image-to-text-0"
+        url = "http://image-to-text.default.svc.cluster.local:8080"
 
         span = tracer.active_span
         headers = {}
-        span.set_tag(tags.HTTP_URL, f"http://{gateway_hostname}:8080/function/merge)")
+        span.set_tag(tags.HTTP_URL, "http://merge.default.svc.cluster.local:8080")
         tracer.inject(span, Format.HTTP_HEADERS, headers)
 
         with open("/tmp/span_context.txt", 'w') as f:
@@ -78,13 +79,12 @@ def handle(req):
             client.make_bucket("context")
 
         client.fput_object("context", "span_context.txt", "/tmp/span_context.txt")
-
         span.set_tag(tags.HTTP_METHOD, "GET")
         span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
         span.set_tag(tags.HTTP_URL, url)
         tracer.inject(span, Format.HTTP_HEADERS, headers)
 
-        threads = []
+        # threads = []
         idx = 0
 
         if not client.bucket_exists("incoming"):
@@ -99,16 +99,16 @@ def handle(req):
 
             client.fput_object("incoming", filename, f"/tmp/{filename}")
 
-            # requests.post(url, data=str(idx), headers=headers)
+            requests.post(url, data=str(idx), headers=headers)
 
-            t = threading.Thread(target=invoke_function(url, idx, headers))
-            threads.append(t)
+            # t = threading.Thread(target=invoke_function(url, idx, headers))
+            # threads.append(t)
             idx += 1
 
-        for th in threads:
-            th.start()
-
-        for th in threads:
-            th.join()
+        # for th in threads:
+        #     th.start()
+        #
+        # for th in threads:
+        #     th.join()
 
         return req

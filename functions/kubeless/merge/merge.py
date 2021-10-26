@@ -33,7 +33,9 @@ def init_tracer(service):
 tracer = init_tracer("merge")
 
 
-def handle(req):
+def handle(event, context):
+    req = event["data"]
+
     client = Minio(os.environ['minio_hostname'],
                    access_key=os.environ['minio_access_key'],
                    secret_key=os.environ['minio_secret_key'],

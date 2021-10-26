@@ -3,7 +3,6 @@ from PIL import Image
 from opentracing.ext import tags
 from opentracing.propagation import Format
 from jaeger_client import Config
-from flask import request
 import logging
 import pytesseract
 import os
@@ -38,8 +37,11 @@ def init_tracer(service):
 tracer = init_tracer("image-to-text")
 
 
-def handle(req):
-    span_ctx = tracer.extract(Format.HTTP_HEADERS, request.headers)
+def handle(event, context):
+    req = event["data"].decode("utf-8")
+
+    headers = {}
+    span_ctx = tracer.extract(Format.HTTP_HEADERS, headers)
     span_tags = {tags.SPAN_KIND: tags.SPAN_KIND_RPC_SERVER}
 
     with tracer.start_active_span(f"image-to-text-{req}", child_of=span_ctx, tags=span_tags) as scope:
@@ -73,9 +75,7 @@ def handle(req):
         scope.span.log_kv({"event": "check_size_of_paragraph_bucket"})
 
         if len(list(client.list_objects("paragraphs"))) == 4:
-            gateway_hostname = os.getenv("gateway_hostname", "gateway.openfaas")
-            url = f"http://{gateway_hostname}:8080/async-function/merge"
-
+            url = "http://merge.default.svc.cluster.local:8080"
             scope.span.log_kv({"event": "invoke_merge_function"})
             requests.post(url)
 

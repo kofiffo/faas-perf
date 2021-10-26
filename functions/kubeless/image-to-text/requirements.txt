@@ -1,0 +1,7 @@
+minio
+pillow
+pytesseract
+jaeger-client
+opentracing
+requests
+Flask

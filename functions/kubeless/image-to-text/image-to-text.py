@@ -3,10 +3,12 @@ from PIL import Image
 from opentracing.ext import tags
 from opentracing.propagation import Format
 from jaeger_client import Config
+from bottle import request
 import logging
 import pytesseract
 import os
 import requests
+import json
 
 os.environ["OMP_THREAD_LIMIT"] = '1'
 
@@ -38,13 +40,16 @@ tracer = init_tracer("image-to-text")
 
 
 def handle(event, context):
-    req = event["data"].decode("utf-8")
+    # s = event["data"].decode("utf-8")
+    data = event["data"]
+    idx = data["index"]
+    headers = json.loads(data["headers"].replace('\'', '\"'))
 
-    headers = {}
     span_ctx = tracer.extract(Format.HTTP_HEADERS, headers)
+    # span_ctx = tracer.extract(Format.HTTP_HEADERS, request.headers)
     span_tags = {tags.SPAN_KIND: tags.SPAN_KIND_RPC_SERVER}
 
-    with tracer.start_active_span(f"image-to-text-{req}", child_of=span_ctx, tags=span_tags) as scope:
+    with tracer.start_active_span(f"image-to-text-{idx}", child_of=span_ctx, tags=span_tags) as scope:
 
         scope.span.log_kv({"event": "mc_setup"})
 
@@ -55,7 +60,7 @@ def handle(event, context):
 
         scope.span.log_kv({"event": "get_object"})
 
-        filename = f"paragraph_{req}"
+        filename = f"paragraph_{idx}"
         client.fget_object("incoming", f"{filename}.png", f"/tmp/{filename}.png")
 
         scope.span.log_kv({"event": "image_to_string"})
@@ -79,4 +84,4 @@ def handle(event, context):
             scope.span.log_kv({"event": "invoke_merge_function"})
             requests.post(url)
 
-        return req
+        return idx

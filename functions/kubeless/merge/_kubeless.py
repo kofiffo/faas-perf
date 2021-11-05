@@ -67,11 +67,8 @@ class PicklableBottleRequest(bottle.BaseRequest):
         setattr(self, 'environ', env)
 
 
-def funcWrap(q, event, c):
-    try:
-        q.put(func(event, c))
-    except Exception as inst:
-        q.put(inst)
+def funcWrap(event, c):
+    return func(event, c)
 
 
 @app.get('/healthz')
@@ -104,22 +101,46 @@ def handler():
     func_calls.labels(method).inc()
     with func_errors.labels(method).count_exceptions():
         with func_hist.labels(method).time():
-            q = ctx.Queue()
-            p = ctx.Process(target=funcWrap, args=(q, event, function_context))
-            p.start()
-
             try:
-                res = q.get(block=True, timeout=timeout)
-            except queue.Empty:
-                p.terminate()
-                p.join()
-                return bottle.HTTPError(408, "Timeout while processing the function")
-            else:
-                p.join()
-                if isinstance(res, Exception) and not isinstance(res, bottle.HTTPResponse):
-                    logging.error("Function returned an exception: %s", res)
-                    raise res
-                return res
+                ret = funcWrap(event, function_context)
+                return ret
+            except Exception as e:
+                print(e)
+
+# def handler():
+#     req = bottle.request
+#     data = req.body.read()
+#     picklable_req = PicklableBottleRequest(data, req.environ.copy())
+#     if req.get_header('content-type') == 'application/json':
+#         data = req.json
+#     event = {
+#         'data': data,
+#         'event-id': req.get_header('event-id'),
+#         'event-type': req.get_header('event-type'),
+#         'event-time': req.get_header('event-time'),
+#         'event-namespace': req.get_header('event-namespace'),
+#         'extensions': {'request': picklable_req}
+#     }
+#     method = req.method
+#     func_calls.labels(method).inc()
+#     with func_errors.labels(method).count_exceptions():
+#         with func_hist.labels(method).time():
+#             q = ctx.Queue()
+#             p = ctx.Process(target=funcWrap, args=(q, event, function_context))
+#             p.start()
+#
+#             try:
+#                 res = q.get(block=True, timeout=timeout)
+#             except queue.Empty:
+#                 p.terminate()
+#                 p.join()
+#                 return bottle.HTTPError(408, "Timeout while processing the function")
+#             else:
+#                 p.join()
+#                 if isinstance(res, Exception) and not isinstance(res, bottle.HTTPResponse):
+#                     logging.error("Function returned an exception: %s", res)
+#                     raise res
+#                 return res
 
 
 def preload():

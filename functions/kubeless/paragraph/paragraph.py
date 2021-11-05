@@ -3,6 +3,9 @@ from PIL import Image
 from opentracing.ext import tags
 from opentracing.propagation import Format
 from jaeger_client import Config
+from kafka import (KafkaProducer, KafkaAdminClient)
+from kafka.admin import NewPartitions
+from kafka.errors import InvalidPartitionsError
 import cv2 as cv
 import numpy as np
 import os
@@ -11,6 +14,7 @@ import base64
 import io
 import logging
 import threading
+import json
 
 
 def invoke_function(url, index, headers):
@@ -90,6 +94,19 @@ def handle(event, context):
         if not client.bucket_exists("incoming"):
             client.make_bucket("incoming")
 
+        bootstrap_server = "kafka.kubeless.svc.cluster.local:9092"
+        topic_name = "image-to-text"
+
+        try:
+            admin = KafkaAdminClient(bootstrap_servers=[bootstrap_server])
+            partitions = {topic_name: NewPartitions(total_count=4)}
+            admin.create_partitions(partitions)
+        except InvalidPartitionsError as e:
+            print(e.message)
+
+        producer = KafkaProducer(bootstrap_servers=[bootstrap_server],
+                                 value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+
         for c in cnts:
             x, y, w, h = cv.boundingRect(c)
             cv.rectangle(image, (x, y), (x + w, y + h), (36, 255, 12), 2)
@@ -99,7 +116,10 @@ def handle(event, context):
 
             client.fput_object("incoming", filename, f"/tmp/{filename}")
 
-            requests.post(url, data=str(idx), headers=headers)
+            # requests.post(url, data=str(idx), headers=headers)
+
+            scope.span.log_kv({"event": f"sending_to_kafka_{idx}"})
+            producer.send(topic=topic_name, value={"index": str(idx), "headers": str(headers)}, partition=idx)
 
             # t = threading.Thread(target=invoke_function(url, idx, headers))
             # threads.append(t)

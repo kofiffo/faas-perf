@@ -2,40 +2,92 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 
-filename = "paragraph-async"
-with open(f"../json/{filename}.json", 'r') as json_data:
-    data = json.load(json_data)
 
-response_times = []
+# function to add value labels
+def addlabels(x, y):
+    for i in range(len(x)):
+        plt.text(i, y[i], "%.3f" % y[i], ha='center')
 
-for trace in data["data"]:
-    if len(list(trace["spans"])) == 6:
-        for span in trace["spans"]:
-            if span["operationName"] == "paragraph":
-                startTime = span["startTime"]
-            if span["operationName"] == "merge":
-                endTime = span["startTime"] + span["duration"]
 
-        traceDuration = endTime - startTime
-        response_times.append(traceDuration / 1000000)
+file_names = ["openfaas-sync", "openfaas-async", "kubeless-sync", "kubeless-async"]
+avgs, par_avgs, itt_avgs, mer_avgs = ([] for i in range(4))
 
-print(f"Valid traces: {len(response_times)}")
+for name in file_names:
+    with open(f"../json/{name}.json", 'r') as json_data:
+        data = json.load(json_data)
 
-sum = 0
+    response_times, par_times, itt_times, mer_times = ([] for i in range(4))
 
-for time in response_times:
-    sum += time
+    for trace in data["data"]:
+        if len(list(trace["spans"])) == 6:
+            for span in trace["spans"]:
+                function = span["operationName"]
+                if function == "paragraph":
+                    startTime = span["startTime"]
+                    par_times.append(span["duration"])
+                if "image-to-text" in function:
+                    itt_times.append(span["duration"])
+                if function == "merge":
+                    endTime = span["startTime"] + span["duration"]
+                    mer_times.append(span["duration"])
 
-print(sum / len(response_times))
+            traceDuration = endTime - startTime
+            response_times.append(traceDuration / 1000000)
 
-n, bins, patches = plt.hist(x=response_times, bins="auto", color="#0504aa", alpha=0.7, rwidth=0.85)
+    par_sum, itt_sum, mer_sum = (0 for i in range(3))
 
-plt.grid(axis='y', alpha=0.75)
-plt.xlabel("Response times (s)")
-plt.ylabel("Number of responses")
-plt.title("Response time histogram of synchronous function invocations")
-maxfreq = n.max()
-# Set a clean upper y-axis limit.
-plt.ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
+    for duration in par_times:
+        par_sum += duration / 1000000
+    for duration in itt_times:
+        itt_sum += duration / 1000000
+    for duration in mer_times:
+        mer_sum += duration / 1000000
 
-plt.show()
+    par_avgs.append(par_sum / len(par_times))
+    itt_avgs.append(itt_sum / len(itt_times))
+    mer_avgs.append(mer_sum / len(mer_times))
+
+    print(name)
+    print(f"Valid traces: {len(response_times)}")
+
+    sum = 0
+
+    for time in response_times:
+        sum += time
+
+    print(f"Average response time: {sum / len(response_times):.3f}s")
+
+    n, bins, patches = plt.hist(x=response_times, bins="auto", color="#0504aa", alpha=0.7, rwidth=0.85)
+
+    plt.grid(axis='y', alpha=0.75)
+    plt.xlabel("Response times (s)")
+    plt.ylabel("Number of responses")
+    plt.title("Response time histogram of synchronous function invocations")
+    maxfreq = n.max()
+    # Set a clean upper y-axis limit.
+    plt.ylim(ymax=np.ceil(maxfreq / 10) * 10 if maxfreq % 10 else maxfreq + 10)
+    plt.title(name)
+
+    plt.show()
+
+avgs.append(par_avgs)
+avgs.append(itt_avgs)
+avgs.append(mer_avgs)
+
+fn_names = ["paragraph", "image-to-text", "merge"]
+idx = 0
+
+for avg in avgs:
+    plt.title(f"{fn_names[idx]} function response times")
+    idx += 1
+    plt.xlabel("Framework and invocation type")
+    plt.ylabel("Response time (s)")
+    addlabels(file_names, avg)
+
+    barlist = plt.bar(file_names, avg)
+    barlist[0].set_color('r')
+    barlist[1].set_color('g')
+    barlist[2].set_color('b')
+    barlist[3].set_color('y')
+
+    plt.show()

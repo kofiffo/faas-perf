@@ -131,4 +131,4 @@ def handle(event, context):
         # for th in threads:
         #     th.join()
 
-        return req
+        return "OK"

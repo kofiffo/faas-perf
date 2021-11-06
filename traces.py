@@ -7,10 +7,9 @@ data_sets = []
 num_bins = 10
 
 for name in file_names:
-    file_path = "../" + name + ".json"
+    file_path = "../json/" + name + ".json"
     with open(file_path, 'r') as json_data:
         data = json.load(json_data)
-
 
     response_times = []
     sum = 0
@@ -48,7 +47,8 @@ binwidth = (maximum - minimum) / 10
 colors = ["red", "tan", "lime"]
 labels = ["minio", "raw", "base64"]
 # n, bins, patches = plt.hist(data_sets, bins=[0.9425, 1.11558, 1.28866, 1.46174, 1.63482, 1.8079, 1.98098, 2.15406, 2.32714, 2.50022, 2.6733], color=colors, label=labels, alpha=0.5)
-n, bins, patches = plt.hist(data_sets, bins=np.arange(minimum, maximum + binwidth, binwidth), color=colors, label=labels, alpha=0.5)
+n, bins, patches = plt.hist(data_sets, bins=np.arange(minimum, maximum + binwidth, binwidth), color=colors,
+                            label=labels, alpha=0.5)
 plt.xticks(bins)
 
 # for i in range(len(data_sets)):

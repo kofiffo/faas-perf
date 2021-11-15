@@ -46,7 +46,8 @@ binwidth = (maximum - minimum) / 10
 
 colors = ["red", "tan", "lime"]
 labels = ["minio", "raw", "base64"]
-# n, bins, patches = plt.hist(data_sets, bins=[0.9425, 1.11558, 1.28866, 1.46174, 1.63482, 1.8079, 1.98098, 2.15406, 2.32714, 2.50022, 2.6733], color=colors, label=labels, alpha=0.5)
+# n, bins, patches = plt.hist(data_sets, bins=[0.9425, 1.11558, 1.28866, 1.46174, 1.63482, 1.8079, 1.98098, 2.15406,
+# 2.32714, 2.50022, 2.6733], color=colors, label=labels, alpha=0.5)
 n, bins, patches = plt.hist(data_sets, bins=np.arange(minimum, maximum + binwidth, binwidth), color=colors,
                             label=labels, alpha=0.5)
 plt.xticks(bins)

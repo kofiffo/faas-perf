@@ -4,5 +4,4 @@ pytesseract
 jaeger-client
 opentracing
 requests
-Flask
 bottle

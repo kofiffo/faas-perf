@@ -10,11 +10,6 @@ import requests
 import base64
 import io
 import logging
-import threading
-
-
-def invoke_function(url, index, headers):
-    requests.post(url, data=str(index), headers=headers)
 
 
 def init_tracer(service):
@@ -64,7 +59,14 @@ def handle(req):
         cnts.reverse()
 
         gateway_hostname = os.getenv("gateway_hostname", "gateway.openfaas")
-        url = f"http://{gateway_hostname}:8080/async-function/image-to-text-0"
+        invocation = os.getenv("INVOCATION", "sync")
+        if invocation == "async":
+            url = f"http://{gateway_hostname}:8080/async-function/image-to-text-0"
+        elif invocation == "sync":
+            url = f"http://{gateway_hostname}:8080/function/image-to-text-0"
+        else:
+            raise Exception("The only valid INVOCATION value is \"async\". If no value is given, synchronous "
+                            "invocation is used.")
 
         span = tracer.active_span
         headers = {}
@@ -84,7 +86,6 @@ def handle(req):
         span.set_tag(tags.HTTP_URL, url)
         tracer.inject(span, Format.HTTP_HEADERS, headers)
 
-        threads = []
         idx = 0
 
         if not client.bucket_exists("incoming"):
@@ -99,16 +100,7 @@ def handle(req):
 
             client.fput_object("incoming", filename, f"/tmp/{filename}")
 
-            # requests.post(url, data=str(idx), headers=headers)
-
-            t = threading.Thread(target=invoke_function(url, idx, headers))
-            threads.append(t)
+            requests.post(url, data=str(idx), headers=headers)
             idx += 1
 
-        for th in threads:
-            th.start()
-
-        for th in threads:
-            th.join()
-
-        return req
+        return "OK"

@@ -16,13 +16,17 @@ docker build -t "$imageName" .
 docker push "$imageName"
 
 # deploy function
-kubeless function deploy "$1" --runtime-image "$imageName" --from-file "$1".py --handler "$1".handle
+if [ -z "$2" ]; then
+  kubeless function deploy "$1" --runtime-image "$imageName" --from-file "$1".py --handler "$1".handle
+else
+  kubeless function deploy "$1" --runtime-image "$imageName" --from-file "$1".py --handler "$1".handle --env INVOCATION="$2"
+fi
 podName="$(kubectl get pod | grep "$1" | awk '{print $1}')"
 kubectl wait --for=condition=Ready pod/"$podName" --timeout=60s
 
 # expose paragraph function if it was rebuilt
 if [ "$1" = "paragraph" ]; then
-  if [ -n "$(ps -ax | grep "kubectl port-forward svc/paragraph 8080:8080")" ]; then
+  if [ "$(ps -ax | grep -c "kubectl port-forward svc/paragraph 8080:8080")" != 1 ]; then
     echo "Killing previous port-forward process..."
     pid="$(ps -ax | grep "kubectl port-forward svc/paragraph 8080:8080" | awk 'NR==1 {print $1}')"
     kill -INT "$pid"

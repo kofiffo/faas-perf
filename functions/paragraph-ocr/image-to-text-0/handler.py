@@ -74,7 +74,14 @@ def handle(req):
 
         if len(list(client.list_objects("paragraphs"))) == 4:
             gateway_hostname = os.getenv("gateway_hostname", "gateway.openfaas")
-            url = f"http://{gateway_hostname}:8080/async-function/merge"
+            invocation = os.getenv("INVOCATION", "sync")
+            if invocation == "async":
+                url = f"http://{gateway_hostname}:8080/async-function/merge"
+            elif invocation == "sync":
+                url = f"http://{gateway_hostname}:8080/function/merge"
+            else:
+                raise Exception("The only valid INVOCATION value is \"async\". If no value is given, synchronous "
+                                "invocation is used.")
 
             scope.span.log_kv({"event": "invoke_merge_function"})
             requests.post(url)

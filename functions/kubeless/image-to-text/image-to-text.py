@@ -40,13 +40,20 @@ tracer = init_tracer("image-to-text")
 
 
 def handle(event, context):
-    # s = event["data"].decode("utf-8")
-    data = event["data"]
-    idx = data["index"]
-    headers = json.loads(data["headers"].replace('\'', '\"'))
+    invocation = os.getenv("INVOCATION", "sync")
+    if invocation == "async":
+        data = event["data"]
+        idx = data["index"]
+        headers = json.loads(data["headers"].replace('\'', '\"'))
 
-    span_ctx = tracer.extract(Format.HTTP_HEADERS, headers)
-    # span_ctx = tracer.extract(Format.HTTP_HEADERS, request.headers)
+        span_ctx = tracer.extract(Format.HTTP_HEADERS, headers)
+    elif invocation == "sync":
+        idx = event["data"].decode("utf-8")
+        span_ctx = tracer.extract(Format.HTTP_HEADERS, request.headers)
+    else:
+        raise Exception("The only valid INVOCATION value is \"async\". If no value is given, synchronous "
+                        "invocation is used.")
+
     span_tags = {tags.SPAN_KIND: tags.SPAN_KIND_RPC_SERVER}
 
     with tracer.start_active_span(f"image-to-text-{idx}", child_of=span_ctx, tags=span_tags) as scope:

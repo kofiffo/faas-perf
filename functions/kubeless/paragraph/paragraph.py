@@ -13,12 +13,7 @@ import requests
 import base64
 import io
 import logging
-import threading
 import json
-
-
-def invoke_function(url, index, headers):
-    requests.post(url, data=str(index), headers=headers)
 
 
 def init_tracer(service):
@@ -88,24 +83,25 @@ def handle(event, context):
         span.set_tag(tags.HTTP_URL, url)
         tracer.inject(span, Format.HTTP_HEADERS, headers)
 
-        # threads = []
         idx = 0
 
         if not client.bucket_exists("incoming"):
             client.make_bucket("incoming")
 
-        bootstrap_server = "kafka.kubeless.svc.cluster.local:9092"
-        topic_name = "image-to-text"
+        invocation = os.getenv("INVOCATION", "sync")
+        if invocation == "async":
+            bootstrap_server = "kafka.kubeless.svc.cluster.local:9092"
+            topic_name = "image-to-text"
 
-        try:
-            admin = KafkaAdminClient(bootstrap_servers=[bootstrap_server])
-            partitions = {topic_name: NewPartitions(total_count=4)}
-            admin.create_partitions(partitions)
-        except InvalidPartitionsError as e:
-            print(e.message)
+            try:
+                admin = KafkaAdminClient(bootstrap_servers=[bootstrap_server])
+                partitions = {topic_name: NewPartitions(total_count=4)}
+                admin.create_partitions(partitions)
+            except InvalidPartitionsError as e:
+                print(e.message)
 
-        producer = KafkaProducer(bootstrap_servers=[bootstrap_server],
-                                 value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+            producer = KafkaProducer(bootstrap_servers=[bootstrap_server],
+                                     value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
         for c in cnts:
             x, y, w, h = cv.boundingRect(c)
@@ -116,19 +112,15 @@ def handle(event, context):
 
             client.fput_object("incoming", filename, f"/tmp/{filename}")
 
-            # requests.post(url, data=str(idx), headers=headers)
+            if invocation == "async":
+                scope.span.log_kv({"event": f"sending_to_kafka_{idx}"})
+                producer.send(topic=topic_name, value={"index": str(idx), "headers": str(headers)}, partition=idx)
+            elif invocation == "sync":
+                requests.post(url, data=str(idx), headers=headers)
+            else:
+                raise Exception("The only valid INVOCATION value is \"async\". If no value is given, synchronous "
+                                "invocation is used.")
 
-            scope.span.log_kv({"event": f"sending_to_kafka_{idx}"})
-            producer.send(topic=topic_name, value={"index": str(idx), "headers": str(headers)}, partition=idx)
-
-            # t = threading.Thread(target=invoke_function(url, idx, headers))
-            # threads.append(t)
             idx += 1
-
-        # for th in threads:
-        #     th.start()
-        #
-        # for th in threads:
-        #     th.join()
 
         return "OK"

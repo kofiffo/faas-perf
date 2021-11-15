@@ -103,11 +103,9 @@ avgs.append(itt_avgs)
 avgs.append(mer_avgs)
 
 fn_names = ["paragraph", "image-to-text", "merge"]
-idx = 0
 
-for avg in avgs:
-    plt.title(f"{fn_names[idx]} function response times")
-    idx += 1
+for i, avg in enumerate(avgs):
+    plt.title(f"{fn_names[i]} function response times")
     plt.xlabel("Framework and invocation type")
     plt.ylabel("Response time (s)")
     addlabels(file_names, avg)

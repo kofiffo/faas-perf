@@ -83,8 +83,6 @@ def handle(event, context):
         span.set_tag(tags.HTTP_URL, url)
         tracer.inject(span, Format.HTTP_HEADERS, headers)
 
-        idx = 0
-
         if not client.bucket_exists("incoming"):
             client.make_bucket("incoming")
 
@@ -103,24 +101,22 @@ def handle(event, context):
             producer = KafkaProducer(bootstrap_servers=[bootstrap_server],
                                      value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
-        for c in cnts:
+        for i, c in enumerate(cnts):
             x, y, w, h = cv.boundingRect(c)
             cv.rectangle(image, (x, y), (x + w, y + h), (36, 255, 12), 2)
             p = gray[y:y + h, x:x + w]
-            filename = f"paragraph_{idx}.png"
+            filename = f"paragraph_{i}.png"
             cv.imwrite(f"/tmp/{filename}", p)
 
             client.fput_object("incoming", filename, f"/tmp/{filename}")
 
             if invocation == "async":
-                scope.span.log_kv({"event": f"sending_to_kafka_{idx}"})
-                producer.send(topic=topic_name, value={"index": str(idx), "headers": str(headers)}, partition=idx)
+                scope.span.log_kv({"event": f"sending_to_kafka_{i}"})
+                producer.send(topic=topic_name, value={"index": str(i), "headers": str(headers)}, partition=i)
             elif invocation == "sync":
-                requests.post(url, data=str(idx), headers=headers)
+                requests.post(url, data=str(i), headers=headers)
             else:
                 raise Exception("The only valid INVOCATION value is \"async\". If no value is given, synchronous "
                                 "invocation is used.")
-
-            idx += 1
 
         return "OK"

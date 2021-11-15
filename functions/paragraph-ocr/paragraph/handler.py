@@ -86,21 +86,18 @@ def handle(req):
         span.set_tag(tags.HTTP_URL, url)
         tracer.inject(span, Format.HTTP_HEADERS, headers)
 
-        idx = 0
-
         if not client.bucket_exists("incoming"):
             client.make_bucket("incoming")
 
-        for c in cnts:
+        for i, c in enumerate(cnts):
             x, y, w, h = cv.boundingRect(c)
             cv.rectangle(image, (x, y), (x + w, y + h), (36, 255, 12), 2)
             p = gray[y:y + h, x:x + w]
-            filename = f"paragraph_{idx}.png"
+            filename = f"paragraph_{i}.png"
             cv.imwrite(f"/tmp/{filename}", p)
 
             client.fput_object("incoming", filename, f"/tmp/{filename}")
 
-            requests.post(url, data=str(idx), headers=headers)
-            idx += 1
+            requests.post(url, data=str(i), headers=headers)
 
         return "OK"

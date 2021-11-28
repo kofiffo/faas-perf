@@ -4,6 +4,7 @@ from opentracing.ext import tags
 from opentracing.propagation import Format
 from jaeger_client import Config
 from bottle import request
+from kafka import KafkaProducer
 import logging
 import pytesseract
 import os
@@ -87,8 +88,17 @@ def handle(event, context):
         scope.span.log_kv({"event": "check_size_of_paragraph_bucket"})
 
         if len(list(client.list_objects("paragraphs"))) == 4:
-            url = "http://merge.default.svc.cluster.local:8080"
-            scope.span.log_kv({"event": "invoke_merge_function"})
-            requests.post(url)
+            if invocation == "async":
+                bootstrap_server = "kafka.kubeless.svc.cluster.local:9092"
+                topic_name = "merge"
+                
+                producer = KafkaProducer(bootstrap_servers=[bootstrap_server])
+
+                scope.span.log_kv({"event": f"sending_to_kafka_merge"})
+                producer.send(topic=topic_name, value=b"merge")
+            else:
+                url = "http://merge.default.svc.cluster.local:8080"
+                scope.span.log_kv({"event": "invoke_merge_function"})
+                requests.post(url)
 
         return idx

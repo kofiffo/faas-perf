@@ -64,7 +64,6 @@ def handle(event, context):
         cnts = cnts[0] if len(cnts) == 2 else cnts[1]
         cnts = cnts[::-1]
 
-        url = "http://image-to-text.default.svc.cluster.local:8080"
 
         span = tracer.active_span
         headers = {}
@@ -80,7 +79,7 @@ def handle(event, context):
         client.fput_object("context", "span_context.txt", "/tmp/span_context.txt")
         span.set_tag(tags.HTTP_METHOD, "GET")
         span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
-        span.set_tag(tags.HTTP_URL, url)
+        # span.set_tag(tags.HTTP_URL, url)
         tracer.inject(span, Format.HTTP_HEADERS, headers)
 
         if not client.bucket_exists("incoming"):
@@ -89,14 +88,14 @@ def handle(event, context):
         invocation = os.getenv("INVOCATION", "sync")
         if invocation == "async":
             bootstrap_server = "kafka.kubeless.svc.cluster.local:9092"
-            topic_name = "image-to-text"
+            topic_name = "image-to-text-"
 
-            try:
-                admin = KafkaAdminClient(bootstrap_servers=[bootstrap_server])
-                partitions = {topic_name: NewPartitions(total_count=4)}
-                admin.create_partitions(partitions)
-            except InvalidPartitionsError as e:
-                print(e.message)
+            # try:
+            #     admin = KafkaAdminClient(bootstrap_servers=[bootstrap_server])
+            #     partitions = {topic_name: NewPartitions(total_count=4)}
+            #     admin.create_partitions(partitions)
+            # except InvalidPartitionsError as e:
+            #     print(e.message)
 
             producer = KafkaProducer(bootstrap_servers=[bootstrap_server],
                                      value_serializer=lambda v: json.dumps(v).encode('utf-8'))
@@ -112,8 +111,9 @@ def handle(event, context):
 
             if invocation == "async":
                 scope.span.log_kv({"event": f"sending_to_kafka_{i}"})
-                producer.send(topic=topic_name, value={"index": str(i), "headers": str(headers)}, partition=i)
+                producer.send(topic=f"{topic_name}{i}", value={"index": str(i), "headers": str(headers)})
             elif invocation == "sync":
+                url = f"http://image-to-text-{i}.default.svc.cluster.local:8080"
                 requests.post(url, data=str(i), headers=headers)
             else:
                 raise Exception("The only valid INVOCATION value is \"async\". If no value is given, synchronous "

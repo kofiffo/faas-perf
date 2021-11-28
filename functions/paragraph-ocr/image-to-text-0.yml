@@ -8,7 +8,7 @@ functions:
     handler: ./image-to-text-0
     image: kofiffo/image-to-text-0:latest
     environment:
-      minio_hostname: "192.168.122.1:9000"
+      minio_hostname: "192.168.49.1:9000"
       minio_access_key: "minioadmin"
       minio_secret_key: "minioadmin"
       write_debug: true

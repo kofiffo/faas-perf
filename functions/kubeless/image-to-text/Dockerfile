@@ -10,7 +10,7 @@ RUN wget -nc -P /tmp/bitnami/pkg/cache/ https://downloads.bitnami.com/files/stac
 ENV BITNAMI_APP_NAME="python" \
     BITNAMI_IMAGE_VERSION="3.7.1-r0" \
     PATH="/opt/bitnami/python/bin:/usr/bin:$PATH" \
-    minio_hostname="192.168.122.1:9000" \
+    minio_hostname="192.168.49.1:9000" \
     minio_access_key="minioadmin" \
     minio_secret_key="minioadmin"
 

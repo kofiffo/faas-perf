@@ -56,14 +56,14 @@ def handle(req):
 
         cnts = cv.findContours(dilate, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         cnts = cnts[0] if len(cnts) == 2 else cnts[1]
-        cnts.reverse()
+        cnts = cnts[::-1]
 
         gateway_hostname = os.getenv("gateway_hostname", "gateway.openfaas")
         invocation = os.getenv("INVOCATION", "sync")
         if invocation == "async":
-            url = f"http://{gateway_hostname}:8080/async-function/image-to-text-0"
+            url = f"http://{gateway_hostname}:8080/async-function/image-to-text-"
         elif invocation == "sync":
-            url = f"http://{gateway_hostname}:8080/function/image-to-text-0"
+            url = f"http://{gateway_hostname}:8080/function/image-to-text-"
         else:
             raise Exception("The only valid INVOCATION value is \"async\". If no value is given, synchronous "
                             "invocation is used.")
@@ -97,7 +97,7 @@ def handle(req):
             cv.imwrite(f"/tmp/{filename}", p)
 
             client.fput_object("incoming", filename, f"/tmp/{filename}")
-
-            requests.post(url, data=str(i), headers=headers)
+            
+            requests.post(f"{url}{i}", data=str(i), headers=headers)
 
         return "OK"

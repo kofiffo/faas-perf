@@ -5,3 +5,4 @@ jaeger-client
 opentracing
 requests
 bottle
+kafka-python
